@@ -32,7 +32,7 @@ Tab:CreateToggle({
     callback = function(value) espEnabled = value end
 })
 
-game:GetService("RunService").Heartbeat:Connect(function()
+game:GetService("RunService").RenderStepped.Conncet(function()
     if not espEnabled then return end
     for _, player in pairs(game.Players:GetPlayers()) do
         if player ~= game.Players.LocalPlayer and player.Character then
