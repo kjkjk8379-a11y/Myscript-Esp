@@ -1,9 +1,10 @@
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/gen2"))()
-local Window = Rayfield:CreateWindow({ name = "ESP", subtitle = "كشف اللاعبين" })
+local Window = Rayfield:CreateWindow({ name = "ESP", subtitle = "كشف القاتل" })
 local Tab = Window:CreateTab({ name = "الرئيسية" })
 
 local espEnabled = false
 
+-- 1. دالة إنشاء ESP
 local function createESP(character, color, text)
     if not character then return end
     local head = character:FindFirstChild("Head")
@@ -28,8 +29,32 @@ local function createESP(character, color, text)
     label.Font = Enum.Font.SourceSansBold
 end
 
+-- 2. دالة كشف القاتل
+local function isKiller(character)
+    local name = character.Name:lower()
+    if name:find("killer") or name:find("murderer") then
+        return true
+    end
+    for _, tool in pairs(character:GetChildren()) do
+        if tool:IsA("Tool") then
+            return true
+        end
+    end
+    return false
+end
+
+-- 3. دالة كشف الساحة (ارتفاع اللاعب)
+local function inArena()
+    local myChar = game.Players.LocalPlayer.Character
+    if not myChar then return false end
+    local myRoot = myChar:FindFirstChild("HumanoidRootPart")
+    if not myRoot then return false end
+    return myRoot.Position.Y > 50  -- إذا ارتفاعك أكثر من 50، أنت في الساحة
+end
+
+-- 4. الزر
 Tab:CreateToggle({
-    name = "تفعيل ESP",
+    name = "تفعيل ESP (القاتل فقط)",
     currentValue = false,
     callback = function(value)
         espEnabled = value
@@ -46,13 +71,16 @@ Tab:CreateToggle({
     end
 })
 
+-- 5. الحلقة
 game:GetService("RunService").RenderStepped:Connect(function()
     if not espEnabled then return end
+    if not inArena() then return end
+    
     for _, player in pairs(game.Players:GetPlayers()) do
         if player ~= game.Players.LocalPlayer and player.Character then
-            local color = Color3.fromRGB(0, 255, 0)
-            local text = player.Name
-            createESP(player.Character, color, text)
+            if isKiller(player.Character) then
+                createESP(player.Character, Color3.fromRGB(255, 0, 0), player.Name)
+            end
         end
     end
 end)
