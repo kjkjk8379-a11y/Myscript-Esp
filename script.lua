@@ -8,34 +8,30 @@ local killerName = nil
 local RED = Color3.fromRGB(255, 0, 0)
 local GREEN = Color3.fromRGB(0, 255, 0)
 
--- ═══ كشف الجولة: يعتمد على حالة اللاعب نفسه ═══
+local function getKiller()
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player.Character then
+            local hum = player.Character:FindFirstChildOfClass("Humanoid")
+            if hum and hum.MaxHealth > 500 and hum.Health > 0 then
+                return player.Name
+            end
+        end
+    end
+    return nil
+end
+
 local function inRound()
     local lp = game.Players.LocalPlayer
     local char = lp.Character
     if not char then return false end
     local hum = char:FindFirstChildOfClass("Humanoid")
-    if not hum then return false end
-    -- لازم تكون حي
-    if hum.Health <= 0 then return false end
+    if not hum or hum.Health <= 0 then return false end
 
-    -- لازم ما تكون بطور Spectate (الكاميرا مربوطة بلاعب ثاني)
-    local cam = workspace.CurrentCamera
-    if cam and cam.CameraSubject ~= hum then
-        return false
-    end
+    if workspace.CurrentCamera.CameraSubject ~= hum then return false end
 
-    -- لازم الجولة شغّالة (نص الوقت ظاهر)
-    local pg = lp:FindFirstChildOfClass("PlayerGui")
-    if pg then
-        for _, gui in pairs(pg:GetDescendants()) do
-            if gui:IsA("TextLabel") and gui.Visible and gui.Text ~= "" then
-                if gui.Text:find("Round ends") or gui.Text:find("Round starts") then
-                    return true
-                end
-            end
-        end
-    end
-    return false
+    if getKiller() == nil then return false end
+
+    return true
 end
 
 local function clearESP()
@@ -62,27 +58,6 @@ local function applyColor(character, color)
         hl.FillColor = color
         hl.OutlineColor = color
     end
-end
-
-local function detectKiller()
-    for _, player in pairs(game.Players:GetPlayers()) do
-        if player.Character then
-            local hum = player.Character:FindFirstChildOfClass("Humanoid")
-            if hum and hum.MaxHealth > 500 then
-                return player.Name
-            end
-        end
-    end
-    for _, player in pairs(game.Players:GetPlayers()) do
-        if player.Character then
-            for _, obj in pairs(player.Character:GetChildren()) do
-                if obj:IsA("Tool") then
-                    return player.Name
-                end
-            end
-        end
-    end
-    return nil
 end
 
 local function refresh()
@@ -124,7 +99,7 @@ task.spawn(function()
             continue
         end
 
-        local k = detectKiller()
+        local k = getKiller()
         if k then killerName = k end
         refresh()
     end
