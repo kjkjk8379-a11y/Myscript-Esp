@@ -20,18 +20,14 @@ local function getKiller()
     return nil
 end
 
--- الساحة = "Round ends" (المعركة شغّالة)
+-- الساحة = AbilityContainer موجود (زر Punch/Block)
 local function inArena()
     local pg = game.Players.LocalPlayer:FindFirstChildOfClass("PlayerGui")
     if not pg then return false end
-    for _, gui in pairs(pg:GetDescendants()) do
-        if gui:IsA("TextLabel") and gui.Visible and gui.Text ~= "" then
-            if gui.Text:find("Round ends") then
-                return true
-            end
-        end
-    end
-    return false
+    local mainUI = pg:FindFirstChild("MainUI")
+    if not mainUI then return false end
+    local ability = mainUI:FindFirstChild("AbilityContainer")
+    return ability ~= nil and ability.Visible
 end
 
 local function iAmAlive()
@@ -103,7 +99,7 @@ task.spawn(function()
         task.wait(0.3)
         if not espEnabled then continue end
 
-        -- 1) لازم بالساحة ("Round ends")
+        -- 1) لازم بالساحة (AbilityContainer)
         if not inArena() then
             clearESP()
             killerName = nil
