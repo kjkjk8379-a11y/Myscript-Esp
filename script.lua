@@ -8,8 +8,23 @@ local killerName = nil
 local RED = Color3.fromRGB(255, 0, 0)
 local GREEN = Color3.fromRGB(0, 255, 0)
 
+-- ═══ كشف الجولة: يعتمد على حالة اللاعب نفسه ═══
 local function inRound()
     local lp = game.Players.LocalPlayer
+    local char = lp.Character
+    if not char then return false end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return false end
+    -- لازم تكون حي
+    if hum.Health <= 0 then return false end
+
+    -- لازم ما تكون بطور Spectate (الكاميرا مربوطة بلاعب ثاني)
+    local cam = workspace.CurrentCamera
+    if cam and cam.CameraSubject ~= hum then
+        return false
+    end
+
+    -- لازم الجولة شغّالة (نص الوقت ظاهر)
     local pg = lp:FindFirstChildOfClass("PlayerGui")
     if pg then
         for _, gui in pairs(pg:GetDescendants()) do
@@ -17,14 +32,6 @@ local function inRound()
                 if gui.Text:find("Round ends") or gui.Text:find("Round starts") then
                     return true
                 end
-            end
-        end
-    end
-    for _, player in pairs(game.Players:GetPlayers()) do
-        if player.Character then
-            local hum = player.Character:FindFirstChildOfClass("Humanoid")
-            if hum and hum.MaxHealth > 500 then
-                return true
             end
         end
     end
@@ -47,11 +54,11 @@ local function applyColor(character, color)
         hl = Instance.new("Highlight")
         hl.Name = "ESP_Highlight"
         hl.Parent = character
-        hl.FillTransparency = 1
-        hl.OutlineTransparency = 0.2
+        hl.FillTransparency = 0.5
+        hl.OutlineTransparency = 0
         hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     end
-    if hl.OutlineColor ~= color then
+    if hl.FillColor ~= color then
         hl.FillColor = color
         hl.OutlineColor = color
     end
