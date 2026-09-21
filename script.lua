@@ -20,8 +20,7 @@ local function createESP(character, color, text)
     local head = character:FindFirstChild("Head")
     if not head then return end
     if head:FindFirstChild("ESP") then
-        local esp = head.ESP
-        local label = esp:FindFirstChildOfClass("TextLabel")
+        local label = head.ESP:FindFirstChildOfClass("TextLabel")
         if label then
             label.Text = text
             label.TextColor3 = color
@@ -60,14 +59,6 @@ local function isKiller(character)
     return false
 end
 
-local function inArena()
-    local myChar = game.Players.LocalPlayer.Character
-    if not myChar then return false end
-    local myRoot = myChar:FindFirstChild("HumanoidRootPart")
-    if not myRoot then return false end
-    return myRoot.Position.Y > 50
-end
-
 Tab:CreateToggle({
     name = "تفعيل ESP (القاتل أحمر / الناجي أخضر)",
     currentValue = false,
@@ -81,13 +72,13 @@ Tab:CreateToggle({
 
 game:GetService("RunService").RenderStepped:Connect(function()
     if not espEnabled then return end
-    if not inArena() then return end
 
     for _, player in pairs(game.Players:GetPlayers()) do
         if player ~= game.Players.LocalPlayer and player.Character then
             local char = player.Character
             local head = char:FindFirstChild("Head")
-            if head and head:FindFirstChild("Humanoid") and head.Humanoid.Health > 0 then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if head and hum and hum.Health > 0 then
                 if isKiller(char) then
                     createESP(char, Color3.fromRGB(255, 0, 0), player.Name)
                 else
