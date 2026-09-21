@@ -8,48 +8,29 @@ local killerName = nil
 local function clearESP()
     for _, player in pairs(game.Players:GetPlayers()) do
         if player.Character then
-            local head = player.Character:FindFirstChild("Head")
-            if head and head:FindFirstChild("ESP") then
-                head.ESP:Destroy()
-            end
+            local hl = player.Character:FindFirstChild("ESP_Highlight")
+            if hl then hl:Destroy() end
         end
     end
 end
 
-local function createESP(character, color, text)
+local function createESP(character, color)
     if not character then return end
-    local head = character:FindFirstChild("Head")
-    if not head then return end
-    if head:FindFirstChild("ESP") then
-        local label = head.ESP:FindFirstChildOfClass("TextLabel")
-        if label then
-            label.Text = text
-            label.TextColor3 = color
-        end
-        return
+    local hl = character:FindFirstChild("ESP_Highlight")
+    if not hl then
+        hl = Instance.new("Highlight")
+        hl.Name = "ESP_Highlight"
+        hl.Parent = character
+        hl.FillTransparency = 0.5
+        hl.OutlineTransparency = 0
+        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     end
-
-    local billboard = Instance.new("BillboardGui")
-    billboard.Name = "ESP"
-    billboard.Parent = head
-    billboard.Size = UDim2.new(0, 200, 0, 50)
-    billboard.StudsOffset = Vector3.new(0, 3, 0)
-    billboard.AlwaysOnTop = true
-
-    local label = Instance.new("TextLabel")
-    label.Parent = billboard
-    label.Size = UDim2.new(1, 0, 1, 0)
-    label.BackgroundTransparency = 1
-    label.Text = text
-    label.TextColor3 = color
-    label.TextStrokeTransparency = 0
-    label.TextScaled = true
-    label.Font = Enum.Font.SourceSansBold
+    hl.FillColor = color
+    hl.OutlineColor = color
 end
 
--- كشف القاتل: 3 طرق
 local function detectKiller()
-    -- الطريقة 1: HP عالي (القاتل بالفورسيكن HP أكبر بكثير)
+    -- الطريقة 1: HP عالي
     for _, player in pairs(game.Players:GetPlayers()) do
         if player.Character then
             local hum = player.Character:FindFirstChildOfClass("Humanoid")
@@ -59,7 +40,7 @@ local function detectKiller()
         end
     end
 
-    -- الطريقة 2: أدوات مميزة بالشخصية
+    -- الطريقة 2: أدوات
     for _, player in pairs(game.Players:GetPlayers()) do
         if player.Character then
             for _, obj in pairs(player.Character:GetChildren()) do
@@ -70,7 +51,7 @@ local function detectKiller()
         end
     end
 
-    -- الطريقة 3: نص من واجهة اللعبة
+    -- الطريقة 3: نص واجهة
     local pg = game.Players.LocalPlayer:FindFirstChildOfClass("PlayerGui")
     if pg then
         for _, gui in pairs(pg:GetDescendants()) do
@@ -102,7 +83,6 @@ Tab:CreateToggle({
     end
 })
 
--- نحدّث القاتل باستمرار
 task.spawn(function()
     while true do
         task.wait(0.5)
@@ -122,9 +102,9 @@ game:GetService("RunService").RenderStepped:Connect(function()
             local hum = char:FindFirstChildOfClass("Humanoid")
             if hum and hum.Health > 0 then
                 if player.Name == killerName then
-                    createESP(char, Color3.fromRGB(255, 0, 0), player.Name)
+                    createESP(char, Color3.fromRGB(255, 0, 0))
                 else
-                    createESP(char, Color3.fromRGB(0, 255, 0), player.Name)
+                    createESP(char, Color3.fromRGB(0, 255, 0))
                 end
             end
         end
