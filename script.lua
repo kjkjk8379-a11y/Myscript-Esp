@@ -20,17 +20,13 @@ local function getKiller()
     return nil
 end
 
-local function inRound()
+local function iAmAlive()
     local lp = game.Players.LocalPlayer
     local char = lp.Character
     if not char then return false end
     local hum = char:FindFirstChildOfClass("Humanoid")
     if not hum or hum.Health <= 0 then return false end
-
     if workspace.CurrentCamera.CameraSubject ~= hum then return false end
-
-    if getKiller() == nil then return false end
-
     return true
 end
 
@@ -90,17 +86,27 @@ Tab:CreateToggle({
 
 task.spawn(function()
     while true do
-        task.wait(0.6)
+        task.wait(0.3)
         if not espEnabled then continue end
 
-        if not inRound() then
-            clearESP()
-            killerName = nil
+        -- إذا أنت ميت/سپكتيت → وقف كامل وامسح
+        if not iAmAlive() then
+            if killerName ~= nil or #game.Players:GetPlayers() > 0 then
+                clearESP()
+                killerName = nil
+            end
             continue
         end
 
+        -- إذا ما فيه قاتل حالياً، لا تمسح — بس خلي killerName محفوظ
         local k = getKiller()
-        if k then killerName = k end
-        refresh()
+        if k then
+            killerName = k
+        end
+
+        -- إذا killerName محفوظ → نرسم (يمنع التوقف المؤقت)
+        if killerName then
+            refresh()
+        end
     end
 end)
