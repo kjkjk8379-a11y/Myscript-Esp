@@ -20,8 +20,21 @@ local function getKiller()
     return nil
 end
 
--- الشرط: أنت حي + الكاميرا عليك (مو سپكتيت)
-local function iAmPlaying()
+-- الساحة = "Round ends" (المعركة شغّالة)
+local function inArena()
+    local pg = game.Players.LocalPlayer:FindFirstChildOfClass("PlayerGui")
+    if not pg then return false end
+    for _, gui in pairs(pg:GetDescendants()) do
+        if gui:IsA("TextLabel") and gui.Visible and gui.Text ~= "" then
+            if gui.Text:find("Round ends") then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+local function iAmAlive()
     local lp = game.Players.LocalPlayer
     local char = lp.Character
     if not char then return false end
@@ -90,20 +103,26 @@ task.spawn(function()
         task.wait(0.3)
         if not espEnabled then continue end
 
-        -- إذا متت / سپكتيت / لوبي → وقف وامسح
-        if not iAmPlaying() then
+        -- 1) لازم بالساحة ("Round ends")
+        if not inArena() then
             clearESP()
             killerName = nil
             continue
         end
 
-        -- أنت حي → نحدّث القاتل
+        -- 2) لازم حي ومو سپكتيت
+        if not iAmAlive() then
+            clearESP()
+            killerName = nil
+            continue
+        end
+
+        -- 3) القاتل
         local k = getKiller()
         if k then
             killerName = k
         end
 
-        -- إذا في قاتل → نرسم
         if killerName then
             refresh()
         end
