@@ -4,33 +4,22 @@ local Tab = Window:CreateTab({ name = "الرئيسية" })
 
 local espEnabled = false
 local killerName = nil
-local roundActive = false
 
 local RED = Color3.fromRGB(255, 0, 0)
 local GREEN = Color3.fromRGB(0, 255, 0)
 
--- ═══ كشف الجولة بشكل صارم ═══
 local function inRound()
     local lp = game.Players.LocalPlayer
-    local char = lp.Character
-    if not char then return false end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return false end
-
-    -- نبحث عن نص الجولة (Round ends in / Round starts)
     local pg = lp:FindFirstChildOfClass("PlayerGui")
     if pg then
         for _, gui in pairs(pg:GetDescendants()) do
             if gui:IsA("TextLabel") and gui.Visible and gui.Text ~= "" then
-                local t = gui.Text
-                if t:find("Round ends") or t:find("Round starts") or t:find("round ends") then
+                if gui.Text:find("Round ends") or gui.Text:find("Round starts") then
                     return true
                 end
             end
         end
     end
-
-    -- نشوف إذا فيه قاتل موجود أصلاً (ما يظهر إلا بالجولة)
     for _, player in pairs(game.Players:GetPlayers()) do
         if player.Character then
             local hum = player.Character:FindFirstChildOfClass("Humanoid")
@@ -39,7 +28,6 @@ local function inRound()
             end
         end
     end
-
     return false
 end
 
@@ -59,18 +47,17 @@ local function applyColor(character, color)
         hl = Instance.new("Highlight")
         hl.Name = "ESP_Highlight"
         hl.Parent = character
-        hl.FillTransparency = 0.7
-        hl.OutlineTransparency = 0.3
-        hl.DepthMode = Enum.HighlightDepthMode.Occluded
+        hl.FillTransparency = 1
+        hl.OutlineTransparency = 0.2
+        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     end
-    if hl.FillColor ~= color then
+    if hl.OutlineColor ~= color then
         hl.FillColor = color
         hl.OutlineColor = color
     end
 end
 
 local function detectKiller()
-    -- HP عالي
     for _, player in pairs(game.Players:GetPlayers()) do
         if player.Character then
             local hum = player.Character:FindFirstChildOfClass("Humanoid")
@@ -79,7 +66,6 @@ local function detectKiller()
             end
         end
     end
-    -- أدوات
     for _, player in pairs(game.Players:GetPlayers()) do
         if player.Character then
             for _, obj in pairs(player.Character:GetChildren()) do
@@ -116,27 +102,18 @@ Tab:CreateToggle({
         if not espEnabled then
             clearESP()
             killerName = nil
-            roundActive = false
         end
     end
 })
 
--- ═══ الحلقة ═══
 task.spawn(function()
     while true do
         task.wait(0.6)
         if not espEnabled then continue end
 
-        local nowInRound = inRound()
-
-        -- إذا انتقلنا من اللوبي للجولة أو العكس
-        if nowInRound ~= roundActive then
-            roundActive = nowInRound
+        if not inRound() then
             clearESP()
             killerName = nil
-        end
-
-        if not roundActive then
             continue
         end
 
