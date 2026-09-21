@@ -20,6 +20,17 @@ local function getKiller()
     return nil
 end
 
+-- الشرط: أنت حي + الكاميرا عليك (مو سپكتيت)
+local function iAmPlaying()
+    local lp = game.Players.LocalPlayer
+    local char = lp.Character
+    if not char then return false end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum or hum.Health <= 0 then return false end
+    if workspace.CurrentCamera.CameraSubject ~= hum then return false end
+    return true
+end
+
 local function clearESP()
     for _, player in pairs(game.Players:GetPlayers()) do
         if player.Character then
@@ -79,23 +90,22 @@ task.spawn(function()
         task.wait(0.3)
         if not espEnabled then continue end
 
-        -- ═══ الشرط الوحيد للتوقف: أنت ميت أو سپكتيت ═══
-        local lp = game.Players.LocalPlayer
-        local char = lp.Character
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
-        if not hum or hum.Health <= 0 or workspace.CurrentCamera.CameraSubject ~= hum then
+        -- إذا متت / سپكتيت / لوبي → وقف وامسح
+        if not iAmPlaying() then
             clearESP()
             killerName = nil
             continue
         end
 
-        -- نحدّث killerName فقط لو لقيناه (بدون ما نمسح القديم)
+        -- أنت حي → نحدّث القاتل
         local k = getKiller()
         if k then
             killerName = k
         end
 
-        -- ═══ نرسم دايماً طالما أنت حي ═══
-        refresh()
+        -- إذا في قاتل → نرسم
+        if killerName then
+            refresh()
+        end
     end
 end)
