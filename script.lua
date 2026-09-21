@@ -5,6 +5,9 @@ local Tab = Window:CreateTab({ name = "الرئيسية" })
 local espEnabled = false
 local killerName = nil
 
+local RED = Color3.fromRGB(255, 0, 0)
+local GREEN = Color3.fromRGB(0, 255, 0)
+
 local function clearESP()
     for _, player in pairs(game.Players:GetPlayers()) do
         if player.Character then
@@ -14,7 +17,7 @@ local function clearESP()
     end
 end
 
-local function createESP(character, color)
+local function applyColor(character, color)
     if not character then return end
     local hl = character:FindFirstChild("ESP_Highlight")
     if not hl then
@@ -25,12 +28,13 @@ local function createESP(character, color)
         hl.OutlineTransparency = 0
         hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     end
-    hl.FillColor = color
-    hl.OutlineColor = color
+    if hl.FillColor ~= color then
+        hl.FillColor = color
+        hl.OutlineColor = color
+    end
 end
 
 local function detectKiller()
-    -- الطريقة 1: HP عالي
     for _, player in pairs(game.Players:GetPlayers()) do
         if player.Character then
             local hum = player.Character:FindFirstChildOfClass("Humanoid")
@@ -39,8 +43,6 @@ local function detectKiller()
             end
         end
     end
-
-    -- الطريقة 2: أدوات
     for _, player in pairs(game.Players:GetPlayers()) do
         if player.Character then
             for _, obj in pairs(player.Character:GetChildren()) do
@@ -50,8 +52,6 @@ local function detectKiller()
             end
         end
     end
-
-    -- الطريقة 3: نص واجهة
     local pg = game.Players.LocalPlayer:FindFirstChildOfClass("PlayerGui")
     if pg then
         for _, gui in pairs(pg:GetDescendants()) do
@@ -67,8 +67,24 @@ local function detectKiller()
             end
         end
     end
-
     return nil
+end
+
+-- دورة وحدة تمسح كل اللاعبين كل 0.4 ثانية
+local function refresh()
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player ~= game.Players.LocalPlayer and player.Character then
+            local char = player.Character
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum and hum.Health > 0 then
+                if player.Name == killerName then
+                    applyColor(char, RED)
+                else
+                    applyColor(char, GREEN)
+                end
+            end
+        end
+    end
 end
 
 Tab:CreateToggle({
@@ -79,34 +95,22 @@ Tab:CreateToggle({
         if not espEnabled then
             clearESP()
             killerName = nil
+        else
+            task.spawn(refresh)
         end
     end
 })
 
+-- تحديث كل 0.4 ثانية بدل كل فريم
 task.spawn(function()
     while true do
-        task.wait(0.5)
+        task.wait(0.4)
         if espEnabled then
             local k = detectKiller()
-            if k then killerName = k end
-        end
-    end
-end)
-
-game:GetService("RunService").RenderStepped:Connect(function()
-    if not espEnabled then return end
-
-    for _, player in pairs(game.Players:GetPlayers()) do
-        if player ~= game.Players.LocalPlayer and player.Character then
-            local char = player.Character
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            if hum and hum.Health > 0 then
-                if player.Name == killerName then
-                    createESP(char, Color3.fromRGB(255, 0, 0))
-                else
-                    createESP(char, Color3.fromRGB(0, 255, 0))
-                end
+            if k and k ~= killerName then
+                killerName = k
             end
+            refresh()
         end
     end
 end)
