@@ -20,14 +20,13 @@ local function getKiller()
     return nil
 end
 
-local function inRound()
+local function iAmAlive()
     local lp = game.Players.LocalPlayer
     local char = lp.Character
     if not char then return false end
     local hum = char:FindFirstChildOfClass("Humanoid")
     if not hum or hum.Health <= 0 then return false end
     if workspace.CurrentCamera.CameraSubject ~= hum then return false end
-    if getKiller() == nil then return false end
     return true
 end
 
@@ -90,32 +89,24 @@ task.spawn(function()
         task.wait(0.3)
         if not espEnabled then continue end
 
-        -- إذا أنت ميت/سپكتيت → وقف
-        local lp = game.Players.LocalPlayer
-        local char = lp.Character
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
-        if not hum or hum.Health <= 0 or workspace.CurrentCamera.CameraSubject ~= hum then
-            clearESP()
-            killerName = nil
-            continue
-        end
-
-        -- ═══ الفرق: نتأكد إن فيه قاتل موجود (جولة شغّالة) ═══
-        -- بس بدون مسح كل دورة
-        local k = getKiller()
-        if k then
-            killerName = k
-        else
-            -- ما فيه قاتل → إحنا بلوبي
-            -- نمسح مرة وحدة ونكمل
-            if killerName then
+        -- إذا أنت ميت/سپكتيت → وقف كامل وامسح
+        if not iAmAlive() then
+            if killerName ~= nil or #game.Players:GetPlayers() > 0 then
                 clearESP()
                 killerName = nil
             end
             continue
         end
 
-        -- ═══ فيه قاتل → نرسم، ولا نمسح أبداً لين الجولة تنتهي ═══
-        refresh()
+        -- إذا ما فيه قاتل حالياً، لا تمسح — بس خلي killerName محفوظ
+        local k = getKiller()
+        if k then
+            killerName = k
+        end
+
+        -- إذا killerName محفوظ → نرسم (يمنع التوقف المؤقت)
+        if killerName then
+            refresh()
+        end
     end
 end)
