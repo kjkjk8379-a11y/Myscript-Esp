@@ -120,19 +120,27 @@ end)
 local AutoPuzzleEnabled = false
 local PuzzleDelay = 3.5
 
-local function SolveCurrentPuzzle()
-    local RS = game:GetService("ReplicatedStorage")
-    local puzzleRemote = RS:FindFirstChild("SolvePuzzle")
+local function getGeneratorRemote()
+    local path = workspace:FindFirstChild("Map")
+    if not path then return nil end
+    path = path:FindFirstChild("Ingame")
+    if not path then return nil end
+    path = path:FindFirstChild("Map")
+    if not path then return nil end
+    path = path:FindFirstChild("Generator")
+    if not path then return nil end
+    path = path:FindFirstChild("Remotes")
+    if not path then return nil end
+    return path:FindFirstChild("RE")
+end
 
-    if not puzzleRemote then
-        print("=== ReplicatedStorage children ===")
-        for _, v in pairs(RS:GetChildren()) do
-            print(v.ClassName, v.Name)
-        end
+local function SolveCurrentPuzzle()
+    local remote = getGeneratorRemote()
+    if not remote then
+        print("[AutoGen] Remote not found â€” not in a round yet.")
         return
     end
-
-    puzzleRemote:FireServer()
+    remote:FireServer()
 end
 
 local function StartPuzzleLoop()
