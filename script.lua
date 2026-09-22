@@ -114,43 +114,108 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- Puzzle Auto Loop
+-- Generator Proximity Auto-Complete
 -- ==========================================
 
-local AutoPuzzleEnabled = false
-local PuzzleDelay = 3.5
+local AutoGenEnabled = false
+local GenDelay = 3.5
 
-local function getGeneratorRemote()
-    local path = workspace:FindFirstChild("Map")
-    if not path then return nil end
-    path = path:FindFirstChild("Ingame")
-    if not path then return nil end
-    path = path:FindFirstChild("Map")
-    if not path then return nil end
-    path = path:FindFirstChild("Generator")
-    if not path then return nil end
-    path = path:FindFirstChild("Remotes")
-    if not path then return nil end
-    return path:FindFirstChild("RE")
+-- Proximity radius â€” tune if needed
+local ENTER_RADIUS = 12
+
+-- Returns the root part position of local player
+local function getPlayerPos()
+    local char = game.Players.LocalPlayer.Character
+    if not char then return nil end
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not root then return nil end
+    return root.Position
 end
 
-local function SolveCurrentPuzzle()
-    local remote = getGeneratorRemote()
-    if not remote then
-        print("[AutoGen] Remote not found â€” not in a round yet.")
-        return
-    end
-    remote:FireServer()
-end
-
-local function StartPuzzleLoop()
-    task.spawn(function()
-        while AutoPuzzleEnabled do
-            SolveCurrentPuzzle()
-            task.wait(PuzzleDelay)
-        end
+-- Returns all generator objects under workspace.Map.Ingame.Map
+local function getGenerators()
+    local ok, mapChildren = pcall(function()
+        return workspace.Map.Ingame.Map:GetChildren()
     end)
+    if not ok then return {} end
+    local gens = {}
+    for _, child in ipairs(mapChildren) do
+        local remotes = child:FindFirstChild("Remotes")
+        if remotes and remotes:FindFirstChild("RE") and remotes:FindFirstChild("RF") then
+            table.insert(gens, child)
+        end
+    end
+    return gens
 end
+
+-- Returns the closest generator within ENTER_RADIUS, or nil
+local function getNearestGenerator()
+    local pos = getPlayerPos()
+    if not pos then return nil end
+    local gens = getGenerators()
+    local closest = nil
+    local closestDist = ENTER_RADIUS
+
+    for _, gen in ipairs(gens) do
+        -- Use PrimaryPart or first BasePart for position
+        local part = gen.PrimaryPart or gen:FindFirstChildWhichIsA("BasePart")
+        if part then
+            local dist = (pos - part.Position).Magnitude
+            if dist < closestDist then
+                closestDist = dist
+                closest = gen
+            end
+        end
+    end
+    return closest
+end
+
+local currentGen = nil  -- generator we're currently inside
+local enteredGen = false
+
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+        if not AutoGenEnabled then
+            currentGen = nil
+            enteredGen = false
+            continue
+        end
+
+        local nearby = getNearestGenerator()
+
+        if nearby and nearby ~= currentGen then
+            -- Entered a new generator zone
+            currentGen = nearby
+            enteredGen = true
+            local rf = nearby.Remotes.RF
+            pcall(function()
+                rf:InvokeServer("Enter")
+            end)
+            print("[AutoGen] Entered generator:", nearby.Name)
+
+        elseif not nearby and currentGen then
+            -- Left the generator zone
+            print("[AutoGen] Left generator:", currentGen.Name)
+            currentGen = nil
+            enteredGen = false
+        end
+    end
+end)
+
+task.spawn(function()
+    while true do
+        task.wait(GenDelay)
+        if not AutoGenEnabled then continue end
+        if not currentGen or not enteredGen then continue end
+
+        local re = currentGen.Remotes.RE
+        pcall(function()
+            re:FireServer()
+        end)
+        print("[AutoGen] Fired RE on:", currentGen.Name)
+    end
+end)
 
 local GeneratorsTab = Window:CreateTab({ Name = "Generators", Icon = 4483362458 })
 
@@ -159,9 +224,10 @@ GeneratorsTab:CreateToggle({
     CurrentValue = false,
     Flag = "AutoPuzzle_Toggle",
     Callback = function(Value)
-        AutoPuzzleEnabled = Value
-        if AutoPuzzleEnabled then
-            StartPuzzleLoop()
+        AutoGenEnabled = Value
+        if not Value then
+            currentGen = nil
+            enteredGen = false
         end
     end,
 })
@@ -174,6 +240,6 @@ GeneratorsTab:CreateSlider({
     CurrentValue = 3.5,
     Flag = "PuzzleDelay_Slider",
     Callback = function(Value)
-        PuzzleDelay = Value
+        GenDelay = Value
     end,
 })
