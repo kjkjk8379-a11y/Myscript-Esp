@@ -1,6 +1,6 @@
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/gen2"))()
-local Window = Rayfield:CreateWindow({ name = "ESP", subtitle = "كشف القاتل" })
-local Tab = Window:CreateTab({ name = "الرئيسية" })
+local Window = Rayfield:CreateWindow({ name = "ESP", subtitle = "ÙƒØ´Ù Ø§Ù„Ù‚Ø§ØªÙ„" })
+local Tab = Window:CreateTab({ name = "Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©" })
 
 local espEnabled = false
 local killerName = nil
@@ -20,7 +20,6 @@ local function getKiller()
     return nil
 end
 
--- الساحة = AbilityContainer موجود (زر Punch/Block)
 local function inArena()
     local pg = game.Players.LocalPlayer:FindFirstChildOfClass("PlayerGui")
     if not pg then return false end
@@ -83,7 +82,7 @@ local function refresh()
 end
 
 Tab:CreateToggle({
-    name = "تفعيل ESP",
+    name = "ØªÙØ¹ÙŠÙ„ ESP",
     currentValue = false,
     callback = function(value)
         espEnabled = value
@@ -98,47 +97,33 @@ task.spawn(function()
     while true do
         task.wait(0.3)
         if not espEnabled then continue end
-
-        -- 1) لازم بالساحة (AbilityContainer)
         if not inArena() then
             clearESP()
             killerName = nil
             continue
         end
-
-        -- 2) لازم حي ومو سپكتيت
         if not iAmAlive() then
             clearESP()
             killerName = nil
             continue
         end
-
-        -- 3) القاتل
         local k = getKiller()
-        if k then
-            killerName = k
-        end
-
-        if killerName then
-            refresh()
-        end
+        if k then killerName = k end
+        if killerName then refresh() end
     end
 end)
 
+-- ==========================================
+-- Puzzle Auto Loop
+-- ==========================================
 
--- REPLACE THIS:
-local function SolveCurrentPuzzle()
-    local puzzleRemote = game:GetService("ReplicatedStorage"):FindFirstChild("SolvePuzzle")
-    if puzzleRemote then
-        puzzleRemote:FireServer()
-    end
-end
+local AutoPuzzleEnabled = false
+local PuzzleDelay = 3.5
 
--- WITH THIS:
 local function SolveCurrentPuzzle()
     local RS = game:GetService("ReplicatedStorage")
     local puzzleRemote = RS:FindFirstChild("SolvePuzzle")
-    
+
     if not puzzleRemote then
         print("=== ReplicatedStorage children ===")
         for _, v in pairs(RS:GetChildren()) do
@@ -146,6 +131,41 @@ local function SolveCurrentPuzzle()
         end
         return
     end
-    
+
     puzzleRemote:FireServer()
 end
+
+local function StartPuzzleLoop()
+    task.spawn(function()
+        while AutoPuzzleEnabled do
+            SolveCurrentPuzzle()
+            task.wait(PuzzleDelay)
+        end
+    end)
+end
+
+local GeneratorsTab = Window:CreateTab({ Name = "Generators", Icon = 4483362458 })
+
+GeneratorsTab:CreateToggle({
+    Name = "Loop complete current puzzle",
+    CurrentValue = false,
+    Flag = "AutoPuzzle_Toggle",
+    Callback = function(Value)
+        AutoPuzzleEnabled = Value
+        if AutoPuzzleEnabled then
+            StartPuzzleLoop()
+        end
+    end,
+})
+
+GeneratorsTab:CreateSlider({
+    Name = "Wait after doing a puzzle",
+    Range = {0, 10},
+    Increment = 0.5,
+    Suffix = "seconds",
+    CurrentValue = 3.5,
+    Flag = "PuzzleDelay_Slider",
+    Callback = function(Value)
+        PuzzleDelay = Value
+    end,
+})
