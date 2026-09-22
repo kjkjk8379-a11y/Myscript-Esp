@@ -125,29 +125,18 @@ task.spawn(function()
     end
 end)
 
-
-local GeneratorsTab = Window:CreateTab({ Name = "Generators", Icon = 4483362458 })
-
-GeneratorsTab:CreateToggle({
-    Name = "Loop complete current puzzle",
-    CurrentValue = false,
-    Flag = "AutoPuzzle_Toggle",
-    Callback = function(Value)
-        AutoPuzzleEnabled = Value
-        if AutoPuzzleEnabled then
-            StartPuzzleLoop()
+local function SolveCurrentPuzzle()
+    local RS = game:GetService("ReplicatedStorage")
+    local puzzleRemote = RS:FindFirstChild("SolvePuzzle")
+    
+    if not puzzleRemote then
+        -- Print all children so we can find the real remote name
+        print("=== ReplicatedStorage children ===")
+        for _, v in pairs(RS:GetChildren()) do
+            print(v.ClassName, v.Name)
         end
-    end,
-})
-
-GeneratorsTab:CreateSlider({
-    Name = "Wait after doing a puzzle",
-    Range = {0, 10},
-    Increment = 0.5,
-    Suffix = "seconds",
-    CurrentValue = 3.5,
-    Flag = "PuzzleDelay_Slider",
-    Callback = function(Value)
-        PuzzleDelay = Value
-    end,
-})
+        return
+    end
+    
+    puzzleRemote:FireServer()
+end
