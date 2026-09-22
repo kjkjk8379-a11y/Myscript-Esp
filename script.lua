@@ -124,3 +124,59 @@ task.spawn(function()
         end
     end
 end)
+
+
+
+-- ==========================================
+-- ميزة حل الألغاز (Puzzle Auto Loop)
+-- ==========================================
+
+local AutoPuzzleEnabled = false
+local PuzzleDelay = 3.5
+
+-- دالة إرسال حل اللغز للسيرفر
+local function SolveCurrentPuzzle()
+    local puzzleRemote = game:GetService("ReplicatedStorage"):FindFirstChild("SolvePuzzle")
+    if puzzleRemote then
+        puzzleRemote:FireServer()
+    end
+end
+
+-- دالة الحلقة التكرارية
+local function StartPuzzleLoop()
+    task.spawn(function()
+        while AutoPuzzleEnabled do
+            SolveCurrentPuzzle()
+            task.wait(PuzzleDelay)
+        end
+    end)
+end
+
+-- إنشاء تبويب Generators داخل القائمة
+local GeneratorsTab = Window:CreateTab("Generators", 4483362458)
+
+-- زر التشغيل والإيقاف (Toggle)
+GeneratorsTab:CreateToggle({
+   Name = "Loop complete current puzzle",
+   CurrentValue = false,
+   Flag = "AutoPuzzle_Toggle",
+   Callback = function(Value)
+      AutoPuzzleEnabled = Value
+      if AutoPuzzleEnabled then
+          StartPuzzleLoop()
+      end
+   end,
+})
+
+-- شريط تحديد الوقت (3.5 ثانية)
+GeneratorsTab:CreateSlider({
+   Name = "Wait after doing a puzzle",
+   Range = {0, 10},
+   Increment = 0.5,
+   Suffix = "seconds",
+   CurrentValue = 3.5,
+   Flag = "PuzzleDelay_Slider",
+   Callback = function(Value)
+      PuzzleDelay = Value
+   end,
+})
