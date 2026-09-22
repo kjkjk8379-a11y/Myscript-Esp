@@ -125,6 +125,7 @@ task.spawn(function()
     end
 end)
 
+
 local function SolveCurrentPuzzle()
     local RS = game:GetService("ReplicatedStorage")
     local puzzleRemote = RS:FindFirstChild("SolvePuzzle")
